@@ -3,6 +3,7 @@
   const data = window.UNIVERSE_DATA;
   const ui = data.ui;
   const app = document.getElementById('app');
+  const localCovers = new Map();
   let tag = '', emotion = '', jungTheme = 'pink';
   const el = (name, cls, text) => {
     const node = document.createElement(name);
@@ -40,12 +41,42 @@
     data.people.forEach((person, index) => {
       const card = el('article', `room-card theme-${person.theme}`);
       card.addEventListener('click', event => {
-        if (!event.target.closest('a')) location.hash = person.id;
+        if (!event.target.closest('a, button, input, label')) location.hash = person.id;
       });
       const art = el('div', 'room-art');
-      const img = image(person.cover, person.name, 'cover-image');
+      const img = localCovers.has(person.id) ? el('img', 'cover-image') : image(person.cover, person.name, 'cover-image');
+      if (img) {
+        if (localCovers.has(person.id)) { img.src = localCovers.get(person.id); img.alt = person.name; }
+        img.style.objectPosition = person.coverPosition || '50% 40%';
+        img.addEventListener('load', () => art.classList.add('has-photo'));
+        img.addEventListener('error', () => { img.remove(); art.classList.remove('has-photo'); });
+      }
       if (img) art.append(img);
       art.append(el('span', 'orbit orbit-one'), el('span', 'orbit orbit-two'), el('span', 'room-symbol', person.symbol), el('span', 'room-number', `0${index + 1}`));
+      const hint = el('span', 'cover-hint', ui.coverHint); art.append(hint);
+      const picker = el('input', 'cover-input'); picker.type = 'file'; picker.accept = 'image/*';
+      picker.id = `cover-${person.id}`;
+      const uploadText = localCovers.has(person.id) ? ui.replaceCover : ui.upload;
+      const controls = el('div', 'cover-controls');
+      const trigger = button(uploadText, 'upload-button', () => picker.click());
+      trigger.setAttribute('aria-label', `${person.name}：${uploadText}`);
+      controls.append(picker, trigger);
+      if (localCovers.has(person.id)) controls.append(button(ui.removeCover, 'remove-cover', () => {
+        URL.revokeObjectURL(localCovers.get(person.id)); localCovers.delete(person.id); home();
+      }));
+      picker.addEventListener('change', () => {
+        const file = picker.files[0]; if (!file) return;
+        if (!file.type.startsWith('image/')) { alert(ui.uploadError); return; }
+        const url = URL.createObjectURL(file);
+        const probe = new Image();
+        probe.onload = () => {
+          if (localCovers.has(person.id)) URL.revokeObjectURL(localCovers.get(person.id));
+          localCovers.set(person.id, url); home();
+        };
+        probe.onerror = () => { URL.revokeObjectURL(url); alert(ui.uploadError); };
+        probe.src = url;
+      });
+      art.append(controls);
       const content = el('div', 'room-content');
       content.append(el('p', 'english', person.english), el('h3', '', person.name));
       const keywords = el('div', 'keywords'); person.keywords.forEach(word => keywords.append(el('span', '', word)));
@@ -53,7 +84,7 @@
       content.append(keywords, el('p', 'description', person.description), link);
       card.append(art, content); grid.append(card);
     });
-    app.replaceChildren(hero, heading, grid);
+    app.replaceChildren(hero, heading, grid, el('p', 'upload-note', ui.uploadNote));
   }
   function filterGroup(label, values, selected, choose) {
     const group = el('div', 'filter-group'); group.append(el('p', 'filter-label', label));

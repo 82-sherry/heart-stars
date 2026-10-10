@@ -1,5 +1,6 @@
 /* 所有展示文案、人物、图片与视频链接都在这里编辑。
  * 图片示例：image: "assets/my-photo.jpg"，封面：cover: "assets/my-cover.jpg"。
+ * 首页推荐 4:5 或 3:4 竖图；coverPosition 可调整裁切中心，例如 "50% 30%"。
  * 链接示例：url: "https://你确认过的链接"。留空会显示“待补链接”。
  * 当前条目都是私人收藏的编辑提示，不是官方事实或真实事件记录。
  */
@@ -9,6 +10,9 @@ window.UNIVERSE_DATA = {
     headerNote: '一间只属于我的记忆房间', eyebrow: '给心里亮着的那些星',
     intro: '有些光不必解释。把让我停下、心动、重新出发的瞬间，轻轻放在这里。',
     collection: '我的精神坐标', collectionNote: '三个入口，三种让心重新亮起的方式',
+    upload: '选择封面图片', replaceCover: '更换封面', removeCover: '恢复默认',
+    coverHint: '推荐 4:5 或 3:4 竖图', uploadNote: '选图仅在本次打开时预览，不会上传。永久替换请修改 data.js 的 cover。',
+    uploadError: '请选择可正常打开的图片文件。',
     enter: '走进这个房间', back: '返回我的宇宙', room: '私人精神档案',
     tags: '此刻，想靠近哪一种力量？', emotions: '带着今天的心情进来',
     all: '全部', theme: '房间的光', pink: '粉色', blue: '天蓝色',
@@ -22,7 +26,7 @@ window.UNIVERSE_DATA = {
   people: [
     {
       id: 'family', name: 'TF家族 / 时代少年团', english: 'TF FAMILY / TNT',
-      theme: 'gold', cover: '', symbol: '✦', keywords: ['家人感', '一起长大', '少年感'],
+      theme: 'gold', cover: '', coverPosition: '50% 40%', symbol: '✦', keywords: ['家人感', '一起长大', '少年感'],
       description: '人群里的暖光，和一起长大的勇气。',
       roomDescription: '把群像、舞台光和那些像家一样的瞬间，收进一间暖金色的房间。',
       tags: ['家人感', '一起长大', '舞台光'], emotions: ['想被陪伴', '需要勇气', '想念'],
@@ -39,7 +43,7 @@ window.UNIVERSE_DATA = {
       ]
     },
     {
-      id: 'su', name: '苏新皓', english: 'SU XIN HAO', theme: 'red', cover: '', symbol: '✷',
+      id: 'su', name: '苏新皓', english: 'SU XIN HAO', theme: 'red', cover: '', coverPosition: '50% 40%', symbol: '✷',
       keywords: ['创意', '持续营业', '强者感'], description: '聚光灯下的火焰，也照亮继续向前的我。',
       roomDescription: '把舞台、练习室和让我想继续努力的瞬间，放进这束红色的光里。',
       tags: ['创意', '坚持', '舞台掌控'], emotions: ['想重新出发', '需要勇气', '想充电'],
@@ -56,7 +60,7 @@ window.UNIVERSE_DATA = {
       ]
     },
     {
-      id: 'jung', name: '郑雅贤', english: 'JUNG YA HYUN', theme: 'pink', cover: '', symbol: '❋',
+      id: 'jung', name: '郑雅贤', english: 'JUNG YA HYUN', theme: 'pink', cover: '', coverPosition: '50% 40%', symbol: '❋',
       keywords: ['中文连接感', '表情管理', '舞台掌控'], description: '在花与麦克风之间，收藏心动的连接。',
       roomDescription: '用粉色或天蓝色安放此刻的喜欢。这是我的房间配色，留给温柔与清透的心情。',
       tags: ['中文连接感', '表情管理', '舞台掌控'], emotions: ['想被治愈', '想充电', '需要勇气'],
