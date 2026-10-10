@@ -1,0 +1,127 @@
+(() => {
+  'use strict';
+  const data = window.UNIVERSE_DATA;
+  const ui = data.ui;
+  const app = document.getElementById('app');
+  let tag = '', emotion = '', jungTheme = 'pink';
+  const el = (name, cls, text) => {
+    const node = document.createElement(name);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const button = (text, cls, action) => {
+    const node = el('button', cls, text);
+    node.type = 'button'; node.addEventListener('click', action); return node;
+  };
+  // Only local paths and HTTP(S) URLs are accepted; text is always rendered as text.
+  function safePath(value) {
+    if (!value || typeof value !== 'string') return '';
+    if (/^(?:https?:\/\/|(?:\.\.?\/)?assets\/)/i.test(value)) return value;
+    return '';
+  }
+  function image(path, name, cls) {
+    const src = safePath(path);
+    if (!src) return null;
+    const img = el('img', cls); img.src = src; img.alt = name; img.loading = 'lazy';
+    img.addEventListener('error', () => img.remove()); return img;
+  }
+  document.title = data.title;
+  document.getElementById('brand').textContent = `✦ ${data.title}`;
+  document.getElementById('header-note').textContent = ui.headerNote;
+  document.getElementById('footer').append(el('p', '', ui.footer), el('small', '', ui.footerNote));
+  function home() {
+    document.body.dataset.theme = 'home';
+    const hero = el('section', 'home-hero');
+    hero.append(el('p', 'eyebrow', ui.eyebrow), el('h1', '', data.title), el('p', 'subtitle', data.subtitle), el('p', 'intro', ui.intro));
+    const heading = el('div', 'collection-heading');
+    heading.append(el('h2', '', ui.collection), el('p', '', ui.collectionNote));
+    const grid = el('div', 'room-grid');
+    data.people.forEach((person, index) => {
+      const card = el('article', `room-card theme-${person.theme}`);
+      card.addEventListener('click', event => {
+        if (!event.target.closest('a')) location.hash = person.id;
+      });
+      const art = el('div', 'room-art');
+      const img = image(person.cover, person.name, 'cover-image');
+      if (img) art.append(img);
+      art.append(el('span', 'orbit orbit-one'), el('span', 'orbit orbit-two'), el('span', 'room-symbol', person.symbol), el('span', 'room-number', `0${index + 1}`));
+      const content = el('div', 'room-content');
+      content.append(el('p', 'english', person.english), el('h3', '', person.name));
+      const keywords = el('div', 'keywords'); person.keywords.forEach(word => keywords.append(el('span', '', word)));
+      const link = el('a', 'enter-link', `${ui.enter} ↗`); link.href = `#${person.id}`;
+      content.append(keywords, el('p', 'description', person.description), link);
+      card.append(art, content); grid.append(card);
+    });
+    app.replaceChildren(hero, heading, grid);
+  }
+  function filterGroup(label, values, selected, choose) {
+    const group = el('div', 'filter-group'); group.append(el('p', 'filter-label', label));
+    const list = el('div', 'filter-buttons');
+    ['', ...values].forEach(value => {
+      const node = button(value || ui.all, `chip${selected === value ? ' active' : ''}`, () => choose(value));
+      node.setAttribute('aria-pressed', String(selected === value)); list.append(node);
+    }); group.append(list); return group;
+  }
+  function detail(person) {
+    const theme = person.id === 'jung' ? jungTheme : person.theme;
+    document.body.dataset.theme = theme;
+    const back = el('a', 'back-link', `← ${ui.back}`); back.href = '#';
+    const hero = el('section', 'detail-hero');
+    const cover = image(person.cover, person.name, 'detail-cover'); if (cover) hero.append(cover);
+    const info = el('div', 'detail-info');
+    info.append(el('p', 'eyebrow', ui.room), el('p', 'english', person.english), el('h1', '', person.name), el('p', 'subtitle', person.roomDescription));
+    hero.append(info, el('span', 'detail-symbol', person.symbol));
+    if (person.id === 'jung') {
+      const themes = el('div', 'theme-switch'); themes.append(el('span', '', ui.theme));
+      [['pink', ui.pink], ['blue', ui.blue]].forEach(([key, title]) => {
+        const btn = button(title, `theme-button ${key}${theme === key ? ' selected' : ''}`, () => { jungTheme = key; detail(person); });
+        btn.setAttribute('aria-pressed', String(theme === key)); themes.append(btn);
+      }); info.append(themes);
+    }
+    const nav = el('nav', 'section-nav'); nav.setAttribute('aria-label', ui.room);
+    ui.sections.forEach((section, index) => { const link = el('a', '', section); link.href = `#${person.id}/${index}`; nav.append(link); });
+    const filters = el('section', 'filters');
+    filters.append(filterGroup(ui.tags, person.tags, tag, value => { tag = value; detail(person); }), filterGroup(ui.emotions, person.emotions, emotion, value => { emotion = value; detail(person); }));
+    const matches = person.memories.filter(item => (!tag || item.tags.includes(tag)) && (!emotion || item.emotions.includes(emotion)));
+    const status = el('div', 'filter-status'); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+    status.append(el('span', '', `${ui.filtered} · ${matches.length} ${ui.count}`));
+    if (tag || emotion) status.append(button(ui.reset, 'reset-button', () => { tag = ''; emotion = ''; detail(person); }));
+    const archive = el('div', 'archive');
+    ui.sections.forEach((section, index) => {
+      const entries = matches.filter(item => item.section === section); if (!entries.length) return;
+      const block = el('section', 'archive-section'); block.id = `section-${index}`;
+      const heading = el('div', 'section-heading'); heading.append(el('span', '', String(index + 1).padStart(2, '0')), el('h2', '', section));
+      block.append(heading);
+      const cards = el('div', 'memory-grid');
+      entries.forEach(item => {
+        const card = el('article', 'memory-card');
+        const img = image(item.image, item.title, 'memory-image');
+        if (img || item.visual) {
+          const visual = el('div', 'visual-placeholder'); visual.append(el('span', '', '✧'), el('small', '', ui.placeholder));
+          if (img) visual.append(img); card.append(visual);
+        }
+        const body = el('div', 'memory-body');
+        const tags = el('div', 'memory-tags'); item.tags.forEach(word => tags.append(el('span', '', word)));
+        body.append(tags, el('h3', '', item.title), el('p', '', item.text));
+        const url = typeof item.url === 'string' && /^https?:\/\//i.test(item.url) ? item.url : '';
+        if (url) { const link = el('a', 'memory-link', `${ui.open} ↗`); link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; body.append(link); }
+        else body.append(el('span', 'pending-link', `${ui.pending} ↗`));
+        card.append(body); cards.append(card);
+      }); block.append(cards); archive.append(block);
+    });
+    if (!matches.length) archive.append(el('p', 'empty-state', ui.empty));
+    app.replaceChildren(back, hero, nav, filters, status, archive, el('p', 'archive-note', ui.note));
+  }
+  let currentId = '';
+  function route() {
+    const [id, section] = location.hash.slice(1).split('/');
+    const person = data.people.find(item => item.id === id);
+    if (id !== currentId) { tag = ''; emotion = ''; }
+    currentId = id;
+    if (person) detail(person); else home();
+    if (section !== undefined) document.getElementById(`section-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route); route();
+})();
