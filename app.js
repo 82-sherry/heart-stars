@@ -37,7 +37,7 @@
     popcornCleanup();
     const config = data.popcorn;
     if (!config) return;
-    const layer = el('div', 'popcorn-layer');
+    const layer = el('div', 'popcorn-scene');
     layer.setAttribute('aria-hidden', 'true');
     const bucket = el('div', 'popcorn-bucket');
     bucket.append(el('span', 'bucket-rim'), el('span', 'bucket-body'), el('span', 'bucket-star', '✦'));
@@ -51,66 +51,76 @@
       if (`${width}:${height}` === dimensions) return;
       dimensions = `${width}:${height}`;
       layer.style.height = `${height}px`;
-      layer.querySelectorAll('.popcorn-flight').forEach(node => node.remove());
+      layer.querySelectorAll('.popcorn-layer').forEach(node => node.remove());
       const mobile = width <= config.mobileBreakpoint;
-      const count = mobile ? config.mobileCount : config.desktopCount;
-      const margin = mobile ? 12 : config.exclusionPadding;
-      const edge = config.sizeRange[0] / 2 + config.driftDistance;
-      // Keep readable content clear; opaque cards mask grains during their entrance.
-      const protectedRects = [...document.querySelectorAll('.site-header, .home-hero h1, .home-hero p, .collection-heading, .room-card, .upload-note, footer p, footer small')].map(node => {
+      const rects = [...document.querySelectorAll('.site-header, .home-hero h1, .home-hero p, .collection-heading, .room-card, .upload-note, footer p, footer small')].map(node => {
         let rect = node.getBoundingClientRect();
-        const isCard = node.classList.contains('room-card');
         if (node.matches('h1, p, small')) {
           const range = document.createRange(); range.selectNodeContents(node);
           rect = range.getBoundingClientRect();
         }
-        // Opaque cards sit above this layer; grains can peek through the gaps.
-        const padding = isCard ? 0 : margin;
-        return { left: rect.left - padding, right: rect.right + padding,
+        const padding = node.classList.contains('room-card') ? 3 : config.exclusionPadding;
+        return { card: node.classList.contains('room-card'), left: rect.left - padding, right: rect.right + padding,
           top: rect.top + window.scrollY - padding, bottom: rect.bottom + window.scrollY + padding };
       });
-      const area = config.spreadArea;
-      const points = [];
-      // Jittered grid spreads memories across the whole page rather than clumping.
-      const step = mobile ? 33 : 43;
-      const columns = [];
-      for (let x = Math.max(edge + 1, width * area.left); x < Math.min(width - edge, width * area.right); x += step) columns.push(x);
-      columns.push(Math.min(width - edge - 1, width * area.right));
-      for (let y = Math.min(height * area.top, mobile ? 120 : 145); y < height * area.bottom; y += step) {
-        for (const x of columns) {
-          const point = { x: Math.max(edge + 1, Math.min(width - edge - 1, x + random(-5, 5))), y: y + random(-7, 7) };
-          if (point.x < edge || point.x > width - edge || point.y > height - edge) continue;
-          if (protectedRects.some(r => point.x > r.left && point.x < r.right && point.y > r.top && point.y < r.bottom)) continue;
-          points.push(point);
+      // A cut-out mask protects text and cards even while grains travel from the bucket.
+      const rectangle = (l, t, r, b) => `M${l},${t}H${r}V${b}H${l}Z`;
+      const mask = rectangle(0, 0, width, height) + rects.map(r => rectangle(r.left, r.top, r.right, r.bottom)).join('');
+      const rim = bucket.querySelector('.bucket-rim').getBoundingClientRect();
+      const source = { x: rim.left + rim.width * 0.8, y: rim.top + window.scrollY + rim.height * 0.75 };
+      const used = [];
+      Object.entries(config.layers).forEach(([depth, settings]) => {
+        const plane = el('div', `popcorn-layer popcorn-${depth}`);
+        plane.style.clipPath = `path(evenodd, "${mask}")`;
+        layer.append(plane);
+        const count = mobile ? settings.mobileCount : settings.desktopCount;
+        const sizes = mobile ? settings.mobileSizeRange : settings.sizeRange;
+        const foreground = depth === 'foreground';
+        const points = [];
+        const edge = foreground ? sizes[1] / 2 + settings.driftDistance : sizes[0] / 2;
+        const step = foreground ? 26 : 19;
+        const top = Math.min(height * config.spreadArea.top, 115);
+        const columns = [];
+        for (let x = Math.max(edge, width * config.spreadArea.left); x < width - edge; x += step) columns.push(x);
+        columns.push(width - edge);
+        for (let y = Math.max(top, 95); y < height * config.spreadArea.bottom - edge; y += step) {
+          for (const x of columns) {
+            const point = { x: Math.max(edge, Math.min(width - edge, x + random(-4, 4))), y: y + random(-4, 4) };
+            const clearance = foreground ? edge : 0;
+            if (rects.some(r => { const gap = r.card ? 0 : clearance; return point.x > r.left - gap && point.x < r.right + gap && point.y > r.top - gap && point.y < r.bottom + gap; })) continue;
+            points.push(point);
+          }
         }
-      }
-      // Shuffle before selecting to give every part of the page equal opportunity.
-      for (let i = points.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [points[i], points[j]] = [points[j], points[i]];
-      }
-      const chosen = [];
-      // Interleave vertical bands so long mobile pages also keep memories near the title.
-      const bands = Array.from({ length: 8 }, () => []);
-      points.forEach(point => bands[Math.min(7, Math.floor(point.y / height * 8))].push(point));
-      const distributed = [];
-      while (bands.some(band => band.length)) bands.forEach(band => { if (band.length) distributed.push(band.pop()); });
-      for (const point of distributed) {
-        if (chosen.every(p => Math.hypot(p.x - point.x, p.y - point.y) >= config.particleSpacing)) chosen.push(point);
-        if (chosen.length === count) break;
-      }
-      // Let the nearer grains arrive first; distant grains follow the pouring arc.
-      const source = { x: mobile ? 51 : 88, y: mobile ? 118 : 145 };
-      chosen.sort((a, b) => Math.hypot(a.x - source.x, a.y - source.y) - Math.hypot(b.x - source.x, b.y - source.y));
-      chosen.forEach((point, index) => {
-        const flight = el('span', 'popcorn-flight');
-        const grain = el('span', 'popcorn-grain');
-        const size = random(...config.sizeRange);
-        const duration = random(...config.animationDurationRange);
-        const delay = config.firstDelay + (config.spreadComplete - config.firstDelay - 1.8) * index / Math.max(1, chosen.length - 1);
-        flight.style.cssText = `left:${point.x}px;top:${point.y}px;--from-x:${source.x - point.x}px;--from-y:${source.y - point.y}px;--size:${size}px;--opacity:${random(config.minOpacity, config.maxOpacity)};--delay:${delay}s;--duration:${duration}s;--turn:${random(-45, 45)}deg;--drift:${config.driftDistance}px;--blur:${size < 20 ? 0.5 : 0}px;`;
-        grain.append(el('i', 'popcorn-lobe lobe-one'), el('i', 'popcorn-lobe lobe-two'), el('i', 'popcorn-lobe lobe-three'), el('i', 'popcorn-heart'));
-        flight.append(grain); layer.append(flight);
+        for (let i = points.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [points[i], points[j]] = [points[j], points[i]];
+        }
+        const chosen = [];
+        const accept = point => {
+          if (chosen.every(p => Math.hypot(p.x - point.x, p.y - point.y) >= settings.spacing) && used.every(p => Math.hypot(p.x - point.x, p.y - point.y) >= 19)) {
+            chosen.push(point); used.push(point); return true;
+          }
+          return false;
+        };
+        // A few large grains make the pouring direction explicit, before the wider spread.
+        if (foreground) {
+          const near = points.filter(p => p.x > source.x && p.x < source.x + (mobile ? 170 : 270) && p.y > source.y && p.y < source.y + 210);
+          near.sort((a, b) => Math.hypot(a.x-source.x,a.y-source.y)-Math.hypot(b.x-source.x,b.y-source.y));
+          for (const point of near) { accept(point); if (chosen.length >= 3) break; }
+        }
+        const bands = Array.from({ length: 8 }, () => []);
+        points.forEach(point => bands[Math.min(7, Math.floor(point.y / height * 8))].push(point));
+        while (chosen.length < count && bands.some(band => band.length)) {
+          for (const band of bands) { if (band.length) accept(band.pop()); if (chosen.length >= count) break; }
+        }
+        chosen.forEach((point, index) => {
+          const flight = el('span', 'popcorn-flight');
+          const grain = el('span', 'popcorn-grain');
+          const delay = settings.delayRange[0] + (settings.delayRange[1] - settings.delayRange[0]) * index / Math.max(1, chosen.length - 1);
+          flight.style.cssText = `left:${point.x}px;top:${point.y}px;--from-x:${source.x - point.x}px;--from-y:${source.y - point.y}px;--size:${random(...sizes)}px;--opacity:${random(...settings.opacityRange)};--delay:${delay}s;--entrance:${settings.entranceDuration}s;--duration:${random(...settings.animationDurationRange)}s;--turn:${random(-45,45)}deg;--drift:${settings.driftDistance}px;--blur:${depth === 'background' ? 0.3 : 0}px;`;
+          grain.append(el('i', 'popcorn-lobe lobe-one'), el('i', 'popcorn-lobe lobe-two'), el('i', 'popcorn-lobe lobe-three'), el('i', 'popcorn-heart'));
+          flight.append(grain); plane.append(flight);
+        });
       });
     }
     function schedule() { cancelAnimationFrame(frame); frame = requestAnimationFrame(layout); }

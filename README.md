@@ -41,6 +41,8 @@
 
 ## 爆米花记忆粒子
 
-首页左上角的倾倒桶在 0–1 秒出现，粒子从第 1 秒起逐渐散开，到第 6 秒完成，再持续轻柔漂浮。CSS 图形不需要外部图片；背景层不响应鼠标，卡片与文字在更高层。详情页会移除粒子，窗口变化会重新计算布局。系统开启“减少动态效果”时使用静态粒子。
+首页使用前、中、后三层 CSS 爆米花：桌面默认 10 / 32 / 52 粒，手机 8 / 25 / 40 粒。桶首先出现；前景在 0.5–2 秒内展开，中景、背景在 1–5 秒逐步扩散，然后慢速漂浮。前景透明度为 0.75–0.95，中景 0.45–0.7，背景 0.15–0.35。
 
-在 `data.js` 的 `popcorn` 中调整：`desktopCount`（默认 48）、`mobileCount`（24）、`minOpacity` / `maxOpacity`、`sizeRange`、`animationDurationRange`（秒）、`firstDelay` / `spreadComplete`（秒）、`driftDistance`（像素）、`spreadArea`（整页比例）、`exclusionPadding` 与 `particleSpacing`。分布自动避开文字与卡片中心；极窄布局会优先保留安全间距，可能减少实际数量。
+在 `data.js` 的 `popcorn.layers` 中分别调整每层的 `desktopCount`、`mobileCount`、`sizeRange`、`mobileSizeRange`、`opacityRange`、`animationDurationRange`、`delayRange`、`entranceDuration`、`driftDistance` 和 `spacing`。`spreadArea` 控制整页分布，`exclusionPadding` 控制文字留白。
+
+前景位于空白区域的较高视觉层，中景与背景在内容下方。三层都不响应点击，动态遮罩避开文字与卡片，包括倾倒途中的轨迹。进入详情会清理粒子；改变窗口会重新计算布局。系统开启“减少动态效果”时显示静态粒子。极窄布局优先避让，可能减少实际数量。

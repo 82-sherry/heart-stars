@@ -8,13 +8,14 @@ window.UNIVERSE_DATA = {
   title: '我的精神宇宙', subtitle: '收藏那些让我重新有感觉的人和瞬间',
   // 首页记忆粒子：数量、大小、透明度、速度和覆盖范围均可调整。
   popcorn: {
-    desktopCount: 48, mobileCount: 24, mobileBreakpoint: 700,
-    minOpacity: 0.20, maxOpacity: 0.56,
-    sizeRange: [14, 31], animationDurationRange: [14, 24],
-    firstDelay: 1, spreadComplete: 6, driftDistance: 8,
-    // 相对于整页的范围；保留边缘空间，避免裁切。
-    spreadArea: { left: 0.015, right: 0.985, top: 0.09, bottom: 0.985 },
-    exclusionPadding: 22, particleSpacing: 30
+    mobileBreakpoint: 700,
+    spreadArea: { left: 0.015, right: 0.985, top: 0.035, bottom: 0.985 },
+    exclusionPadding: 12,
+    layers: {
+      foreground: { desktopCount: 10, mobileCount: 8, sizeRange: [34, 48], mobileSizeRange: [26, 36], opacityRange: [0.75, 0.95], animationDurationRange: [10, 16], delayRange: [0.5, 0.9], entranceDuration: 1.1, driftDistance: 10, spacing: 65 },
+      midground: { desktopCount: 32, mobileCount: 25, sizeRange: [23, 33], mobileSizeRange: [19, 27], opacityRange: [0.45, 0.7], animationDurationRange: [14, 22], delayRange: [1, 3.4], entranceDuration: 1.6, driftDistance: 7, spacing: 42 },
+      background: { desktopCount: 52, mobileCount: 40, sizeRange: [12, 20], mobileSizeRange: [10, 17], opacityRange: [0.15, 0.35], animationDurationRange: [20, 30], delayRange: [1.3, 3.2], entranceDuration: 1.8, driftDistance: 5, spacing: 25 }
+    }
   },
   ui: {
     headerNote: '一间只属于我的记忆房间', eyebrow: '给心里亮着的那些星',
