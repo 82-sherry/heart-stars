@@ -28,7 +28,7 @@
     img.addEventListener('error', () => img.remove()); return img;
   }
   document.title = data.title;
-  document.getElementById('brand').textContent = `✦ ${data.title}`;
+  document.getElementById('brand').textContent = data.title;
   document.getElementById('header-note').textContent = ui.headerNote;
   document.getElementById('footer').append(el('p', '', ui.footer), el('small', '', ui.footerNote));
   // One decorative layer, no timers per particle; CSS handles entrance and drift.
@@ -53,7 +53,7 @@
       layer.style.height = `${height}px`;
       layer.querySelectorAll('.popcorn-layer').forEach(node => node.remove());
       const mobile = width <= config.mobileBreakpoint;
-      const rects = [...document.querySelectorAll('.site-header, .home-hero h1, .home-hero p, .collection-heading, .room-card, .upload-note, footer p, footer small')].map(node => {
+      const rects = [...document.querySelectorAll('.site-header, .home-hero h1, .home-hero p, .collection-heading, .room-card, .screening-prompt, .room-ledger, .screening-closing, .upload-note, footer p, footer small')].map(node => {
         let rect = node.getBoundingClientRect();
         if (node.matches('h1, p, small')) {
           const range = document.createRange(); range.selectNodeContents(node);
@@ -65,7 +65,20 @@
       });
       // A cut-out mask protects text and cards even while grains travel from the bucket.
       const rectangle = (l, t, r, b) => `M${l},${t}H${r}V${b}H${l}Z`;
-      const mask = rectangle(0, 0, width, height) + rects.map(r => rectangle(r.left, r.top, r.right, r.bottom)).join('');
+      // Union exclusion rectangles first: overlapping text blocks must never reopen holes.
+      const boundaries = [...new Set([0, height, ...rects.flatMap(r => [Math.max(0, r.top), Math.min(height, r.bottom)])])].sort((a, b) => a - b);
+      let mask = rectangle(0, 0, width, height);
+      for (let i = 0; i < boundaries.length - 1; i++) {
+        const top = boundaries[i], bottom = boundaries[i + 1], center = (top + bottom) / 2;
+        const intervals = rects.filter(r => r.top < center && r.bottom > center).map(r => [Math.max(0, r.left), Math.min(width, r.right)]).sort((a, b) => a[0] - b[0]);
+        const merged = [];
+        intervals.forEach(([left, right]) => {
+          const last = merged[merged.length - 1];
+          if (last && left <= last[1]) last[1] = Math.max(last[1], right);
+          else merged.push([left, right]);
+        });
+        merged.forEach(([left, right]) => { mask += rectangle(left, top, right, bottom); });
+      }
       const rim = bucket.querySelector('.bucket-rim').getBoundingClientRect();
       const source = { x: rim.left + rim.width * 0.8, y: rim.top + window.scrollY + rim.height * 0.75 };
       const used = [];
@@ -88,6 +101,10 @@
             const point = { x: Math.max(edge, Math.min(width - edge, x + random(-4, 4))), y: y + random(-4, 4) };
             const clearance = foreground ? edge : 0;
             if (rects.some(r => { const gap = r.card ? 0 : clearance; return point.x > r.left - gap && point.x < r.right + gap && point.y > r.top - gap && point.y < r.bottom + gap; })) continue;
+            // Confine memories to a pouring ribbon, never a uniformly scattered wall.
+            const ribbonY = (mobile ? 105 : 130) + point.x * (mobile ? 0.52 : 0.48);
+            const nearBucket = point.x < (mobile ? 105 : 270) && point.y < (mobile ? 170 : 230);
+            if (!nearBucket && Math.abs(point.y - ribbonY) > (mobile ? 65 : 78)) continue;
             points.push(point);
           }
         }
@@ -108,8 +125,8 @@
           near.sort((a, b) => Math.hypot(a.x-source.x,a.y-source.y)-Math.hypot(b.x-source.x,b.y-source.y));
           for (const point of near) { accept(point); if (chosen.length >= 3) break; }
         }
-        const bands = Array.from({ length: 8 }, () => []);
-        points.forEach(point => bands[Math.min(7, Math.floor(point.y / height * 8))].push(point));
+        const bands = Array.from({ length: 4 }, () => []);
+        points.forEach(point => bands[Math.min(3, Math.floor(point.x / width * 4))].push(point));
         while (chosen.length < count && bands.some(band => band.length)) {
           for (const band of bands) { if (band.length) accept(band.pop()); if (chosen.length >= count) break; }
         }
@@ -132,7 +149,12 @@
   function home() {
     document.body.dataset.theme = 'home';
     const hero = el('section', 'home-hero');
-    hero.append(el('p', 'eyebrow', ui.eyebrow), el('h1', '', data.title), el('p', 'subtitle', data.subtitle), el('p', 'intro', ui.intro));
+    const title = el('h1'); title.setAttribute('aria-label', data.homeTitle);
+    data.homeTitleLines.forEach(line => title.append(el('span', '', line)));
+    const prompt = el('a', 'screening-prompt', `${ui.screeningPrompt} ↗`); prompt.href = '#exhibition';
+    hero.append(el('p', 'eyebrow', ui.eyebrow), title, el('p', 'subtitle', data.subtitle), el('p', 'intro', ui.intro), prompt);
+    const ledger = el('div', 'room-ledger'); ledger.append(el('span', 'ledger-light'), el('p', '', ui.screeningLabel), el('small', '', ui.roomLedger));
+    hero.append(ledger);
     const heading = el('div', 'collection-heading');
     heading.append(el('h2', '', ui.collection), el('p', '', ui.collectionNote));
     const grid = el('div', 'room-grid');
@@ -180,9 +202,14 @@
       const keywords = el('div', 'keywords'); person.keywords.forEach(word => keywords.append(el('span', '', word)));
       const link = el('a', 'enter-link', `${ui.enter} ↗`); link.href = `#${person.id}`;
       content.append(keywords, el('p', 'description', person.description), link);
-      card.append(art, content); grid.append(card);
+      const spine = el('div', 'archive-spine'); spine.append(el('span', '', `${ui.archiveLabel} / 0${index + 1}`), el('span', '', ui.archiveType));
+      card.append(spine, art, content); grid.append(card);
     });
-    app.replaceChildren(hero, heading, grid, el('p', 'upload-note', ui.uploadNote));
+    const exhibition = el('section', 'exhibition'); exhibition.id = 'exhibition';
+    exhibition.append(heading, grid, el('p', 'upload-note', ui.uploadNote));
+    const room = el('div', 'screening-room'); room.append(hero, exhibition);
+    const closing = el('div', 'screening-closing'); closing.append(el('span', '', ui.archiveCount), el('p', '', ui.roomLedger));
+    app.replaceChildren(room, closing);
     mountPopcorn();
   }
   function filterGroup(label, values, selected, choose) {
@@ -251,7 +278,8 @@
     if (id !== currentId) { tag = ''; emotion = ''; }
     currentId = id;
     if (person) detail(person); else home();
-    if (section !== undefined) document.getElementById(`section-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (id === 'exhibition') document.getElementById('exhibition')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else if (section !== undefined) document.getElementById(`section-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     else window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route); route();

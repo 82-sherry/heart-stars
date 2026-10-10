@@ -5,26 +5,27 @@
  * 当前条目都是私人收藏的编辑提示，不是官方事实或真实事件记录。
  */
 window.UNIVERSE_DATA = {
-  title: '我的精神宇宙', subtitle: '收藏那些让我重新有感觉的人和瞬间',
+  title: '容纳站', homeTitle: '星屑放映室', homeTitleLines: ['星屑', '放映室'], subtitle: '把让我反复回看的瞬间，放进同一间房间。',
   // 首页记忆粒子：数量、大小、透明度、速度和覆盖范围均可调整。
   popcorn: {
     mobileBreakpoint: 700,
     spreadArea: { left: 0.015, right: 0.985, top: 0.035, bottom: 0.985 },
     exclusionPadding: 12,
     layers: {
-      foreground: { desktopCount: 10, mobileCount: 8, sizeRange: [34, 48], mobileSizeRange: [26, 36], opacityRange: [0.75, 0.95], animationDurationRange: [10, 16], delayRange: [0.5, 0.9], entranceDuration: 1.1, driftDistance: 10, spacing: 65 },
-      midground: { desktopCount: 32, mobileCount: 25, sizeRange: [23, 33], mobileSizeRange: [19, 27], opacityRange: [0.45, 0.7], animationDurationRange: [14, 22], delayRange: [1, 3.4], entranceDuration: 1.6, driftDistance: 7, spacing: 42 },
-      background: { desktopCount: 52, mobileCount: 40, sizeRange: [12, 20], mobileSizeRange: [10, 17], opacityRange: [0.15, 0.35], animationDurationRange: [20, 30], delayRange: [1.3, 3.2], entranceDuration: 1.8, driftDistance: 5, spacing: 25 }
+      foreground: { desktopCount: 5, mobileCount: 3, sizeRange: [34, 48], mobileSizeRange: [26, 36], opacityRange: [0.75, 0.95], animationDurationRange: [10, 16], delayRange: [0.5, 0.9], entranceDuration: 1.1, driftDistance: 10, spacing: 65 },
+      midground: { desktopCount: 9, mobileCount: 6, sizeRange: [23, 33], mobileSizeRange: [19, 27], opacityRange: [0.45, 0.7], animationDurationRange: [14, 22], delayRange: [1, 3.4], entranceDuration: 1.6, driftDistance: 7, spacing: 42 },
+      background: { desktopCount: 12, mobileCount: 8, sizeRange: [12, 20], mobileSizeRange: [10, 17], opacityRange: [0.15, 0.35], animationDurationRange: [20, 30], delayRange: [1.3, 3.2], entranceDuration: 1.8, driftDistance: 5, spacing: 25 }
     }
   },
   ui: {
-    headerNote: '一间只属于我的记忆房间', eyebrow: '给心里亮着的那些星',
-    intro: '有些光不必解释。把让我停下、心动、重新出发的瞬间，轻轻放在这里。',
-    collection: '我的精神坐标', collectionNote: '三个入口，三种让心重新亮起的方式',
+    headerNote: '私人收藏 · 非公开放映', eyebrow: '只为自己亮起的一间房',
+    intro: '这里不是资料站，也不是公开粉丝页。只是一些让我停下来、亮起来、重新有感觉的人和片段。',
+    collection: '正在陈列', collectionNote: '三份影像档案，随时为你放映',
+    screeningPrompt: '选择一份档案，开始回看', screeningLabel: '私人放映 · 无限次入场', archiveLabel: '影像档案', archiveType: '私人珍藏', archiveCount: '三个房间 / 持续收藏', roomLedger: '不必解释的喜欢，在这里有一个位置。',
     upload: '选择封面图片', replaceCover: '更换封面', removeCover: '恢复默认',
     coverHint: '推荐 4:5 或 3:4 竖图', uploadNote: '选图仅在本次打开时预览，不会上传。永久替换请修改 data.js 的 cover。',
     uploadError: '请选择可正常打开的图片文件。',
-    enter: '走进这个房间', back: '返回我的宇宙', room: '私人精神档案',
+    enter: '走进这个房间', back: '返回容纳站', room: '私人精神档案',
     tags: '此刻，想靠近哪一种力量？', emotions: '带着今天的心情进来',
     all: '全部', theme: '房间的光', pink: '粉色', blue: '天蓝色',
     pending: '待补链接', open: '打开收藏', placeholder: '留给未来的一张照片',
@@ -36,7 +37,7 @@ window.UNIVERSE_DATA = {
   },
   people: [
     {
-      id: 'family', name: 'TF家族 / 时代少年团', english: 'TF FAMILY / TNT',
+      id: 'family', name: '时代少年团', english: 'TF FAMILY / TNT',
       theme: 'gold', cover: '', coverPosition: '50% 40%', symbol: '✦', keywords: ['家人感', '一起长大', '少年感'],
       description: '人群里的暖光，和一起长大的勇气。',
       roomDescription: '把群像、舞台光和那些像家一样的瞬间，收进一间暖金色的房间。',
