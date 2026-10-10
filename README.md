@@ -38,3 +38,9 @@
 首页采用暖白、奶油色和浅金、浅粉、浅天蓝渐变。卡片图片区域固定为 4:5，推荐使用 4:5 或 3:4 竖图，`object-fit: cover` 自动裁切。
 
 点击“选择封面图片”可在当前页面预览本地图片，不会上传到网络；切换房间后仍保留，刷新页面即恢复默认。永久替换请将图片放入 `assets/`，修改 `data.js` 对应人物的 `cover` 字段，并提交到仓库。`coverPosition` 可调整裁切位置，例如 `"50% 30%"`。无图片或路径失效时保留柔和渐变占位。
+
+## 爆米花记忆粒子
+
+首页左上角的倾倒桶在 0–1 秒出现，粒子从第 1 秒起逐渐散开，到第 6 秒完成，再持续轻柔漂浮。CSS 图形不需要外部图片；背景层不响应鼠标，卡片与文字在更高层。详情页会移除粒子，窗口变化会重新计算布局。系统开启“减少动态效果”时使用静态粒子。
+
+在 `data.js` 的 `popcorn` 中调整：`desktopCount`（默认 48）、`mobileCount`（24）、`minOpacity` / `maxOpacity`、`sizeRange`、`animationDurationRange`（秒）、`firstDelay` / `spreadComplete`（秒）、`driftDistance`（像素）、`spreadArea`（整页比例）、`exclusionPadding` 与 `particleSpacing`。分布自动避开文字与卡片中心；极窄布局会优先保留安全间距，可能减少实际数量。

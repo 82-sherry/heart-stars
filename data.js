@@ -6,6 +6,16 @@
  */
 window.UNIVERSE_DATA = {
   title: '我的精神宇宙', subtitle: '收藏那些让我重新有感觉的人和瞬间',
+  // 首页记忆粒子：数量、大小、透明度、速度和覆盖范围均可调整。
+  popcorn: {
+    desktopCount: 48, mobileCount: 24, mobileBreakpoint: 700,
+    minOpacity: 0.20, maxOpacity: 0.56,
+    sizeRange: [14, 31], animationDurationRange: [14, 24],
+    firstDelay: 1, spreadComplete: 6, driftDistance: 8,
+    // 相对于整页的范围；保留边缘空间，避免裁切。
+    spreadArea: { left: 0.015, right: 0.985, top: 0.09, bottom: 0.985 },
+    exclusionPadding: 22, particleSpacing: 30
+  },
   ui: {
     headerNote: '一间只属于我的记忆房间', eyebrow: '给心里亮着的那些星',
     intro: '有些光不必解释。把让我停下、心动、重新出发的瞬间，轻轻放在这里。',

@@ -31,6 +31,94 @@
   document.getElementById('brand').textContent = `✦ ${data.title}`;
   document.getElementById('header-note').textContent = ui.headerNote;
   document.getElementById('footer').append(el('p', '', ui.footer), el('small', '', ui.footerNote));
+  // One decorative layer, no timers per particle; CSS handles entrance and drift.
+  let popcornCleanup = () => {};
+  function mountPopcorn() {
+    popcornCleanup();
+    const config = data.popcorn;
+    if (!config) return;
+    const layer = el('div', 'popcorn-layer');
+    layer.setAttribute('aria-hidden', 'true');
+    const bucket = el('div', 'popcorn-bucket');
+    bucket.append(el('span', 'bucket-rim'), el('span', 'bucket-body'), el('span', 'bucket-star', '✦'));
+    layer.append(bucket); document.body.append(layer);
+    let frame = 0, dimensions = '';
+    const random = (min, max) => min + Math.random() * (max - min);
+    function layout() {
+      if (document.body.dataset.theme !== 'home') return;
+      const width = document.documentElement.clientWidth;
+      const height = Math.max(document.body.scrollHeight, window.innerHeight);
+      if (`${width}:${height}` === dimensions) return;
+      dimensions = `${width}:${height}`;
+      layer.style.height = `${height}px`;
+      layer.querySelectorAll('.popcorn-flight').forEach(node => node.remove());
+      const mobile = width <= config.mobileBreakpoint;
+      const count = mobile ? config.mobileCount : config.desktopCount;
+      const margin = mobile ? 12 : config.exclusionPadding;
+      const edge = config.sizeRange[0] / 2 + config.driftDistance;
+      // Keep readable content clear; opaque cards mask grains during their entrance.
+      const protectedRects = [...document.querySelectorAll('.site-header, .home-hero h1, .home-hero p, .collection-heading, .room-card, .upload-note, footer p, footer small')].map(node => {
+        let rect = node.getBoundingClientRect();
+        const isCard = node.classList.contains('room-card');
+        if (node.matches('h1, p, small')) {
+          const range = document.createRange(); range.selectNodeContents(node);
+          rect = range.getBoundingClientRect();
+        }
+        // Opaque cards sit above this layer; grains can peek through the gaps.
+        const padding = isCard ? 0 : margin;
+        return { left: rect.left - padding, right: rect.right + padding,
+          top: rect.top + window.scrollY - padding, bottom: rect.bottom + window.scrollY + padding };
+      });
+      const area = config.spreadArea;
+      const points = [];
+      // Jittered grid spreads memories across the whole page rather than clumping.
+      const step = mobile ? 33 : 43;
+      const columns = [];
+      for (let x = Math.max(edge + 1, width * area.left); x < Math.min(width - edge, width * area.right); x += step) columns.push(x);
+      columns.push(Math.min(width - edge - 1, width * area.right));
+      for (let y = Math.min(height * area.top, mobile ? 120 : 145); y < height * area.bottom; y += step) {
+        for (const x of columns) {
+          const point = { x: Math.max(edge + 1, Math.min(width - edge - 1, x + random(-5, 5))), y: y + random(-7, 7) };
+          if (point.x < edge || point.x > width - edge || point.y > height - edge) continue;
+          if (protectedRects.some(r => point.x > r.left && point.x < r.right && point.y > r.top && point.y < r.bottom)) continue;
+          points.push(point);
+        }
+      }
+      // Shuffle before selecting to give every part of the page equal opportunity.
+      for (let i = points.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [points[i], points[j]] = [points[j], points[i]];
+      }
+      const chosen = [];
+      // Interleave vertical bands so long mobile pages also keep memories near the title.
+      const bands = Array.from({ length: 8 }, () => []);
+      points.forEach(point => bands[Math.min(7, Math.floor(point.y / height * 8))].push(point));
+      const distributed = [];
+      while (bands.some(band => band.length)) bands.forEach(band => { if (band.length) distributed.push(band.pop()); });
+      for (const point of distributed) {
+        if (chosen.every(p => Math.hypot(p.x - point.x, p.y - point.y) >= config.particleSpacing)) chosen.push(point);
+        if (chosen.length === count) break;
+      }
+      // Let the nearer grains arrive first; distant grains follow the pouring arc.
+      const source = { x: mobile ? 51 : 88, y: mobile ? 118 : 145 };
+      chosen.sort((a, b) => Math.hypot(a.x - source.x, a.y - source.y) - Math.hypot(b.x - source.x, b.y - source.y));
+      chosen.forEach((point, index) => {
+        const flight = el('span', 'popcorn-flight');
+        const grain = el('span', 'popcorn-grain');
+        const size = random(...config.sizeRange);
+        const duration = random(...config.animationDurationRange);
+        const delay = config.firstDelay + (config.spreadComplete - config.firstDelay - 1.8) * index / Math.max(1, chosen.length - 1);
+        flight.style.cssText = `left:${point.x}px;top:${point.y}px;--from-x:${source.x - point.x}px;--from-y:${source.y - point.y}px;--size:${size}px;--opacity:${random(config.minOpacity, config.maxOpacity)};--delay:${delay}s;--duration:${duration}s;--turn:${random(-45, 45)}deg;--drift:${config.driftDistance}px;--blur:${size < 20 ? 0.5 : 0}px;`;
+        grain.append(el('i', 'popcorn-lobe lobe-one'), el('i', 'popcorn-lobe lobe-two'), el('i', 'popcorn-lobe lobe-three'), el('i', 'popcorn-heart'));
+        flight.append(grain); layer.append(flight);
+      });
+    }
+    function schedule() { cancelAnimationFrame(frame); frame = requestAnimationFrame(layout); }
+    const observer = new ResizeObserver(schedule); observer.observe(app);
+    window.addEventListener('resize', schedule);
+    popcornCleanup = () => { observer.disconnect(); window.removeEventListener('resize', schedule); cancelAnimationFrame(frame); layer.remove(); popcornCleanup = () => {}; };
+    schedule();
+  }
   function home() {
     document.body.dataset.theme = 'home';
     const hero = el('section', 'home-hero');
@@ -85,6 +173,7 @@
       card.append(art, content); grid.append(card);
     });
     app.replaceChildren(hero, heading, grid, el('p', 'upload-note', ui.uploadNote));
+    mountPopcorn();
   }
   function filterGroup(label, values, selected, choose) {
     const group = el('div', 'filter-group'); group.append(el('p', 'filter-label', label));
@@ -95,6 +184,7 @@
     }); group.append(list); return group;
   }
   function detail(person) {
+    popcornCleanup();
     const theme = person.id === 'jung' ? jungTheme : person.theme;
     document.body.dataset.theme = theme;
     const back = el('a', 'back-link', `← ${ui.back}`); back.href = '#';
